@@ -18,9 +18,9 @@ In this phase you configure the arm and gripper, verify them with their test car
 
 ## Add the discovery service
 
-Rather than typing the arm and gripper configs by hand, start with the SO-ARM101 module's **discovery service**. A discovery service reports the hardware attached to a machine and suggests configurations for it, so you configure the right components without hunting for serial ports or attribute names by hand. See [Discovery service](/reference/services/discovery/) for the general pattern.
+Rather than typing the arm and gripper configs by hand, start with the SO-ARM101 module's **discovery service**. A discovery service reports the hardware attached to a machine and suggests configurations for it, so you configure the right components without hunting for serial ports or attribute names by hand. See [Discovery service](/reference/services/discovery/) to learn more about the general pattern.
 
-On the **CONFIGURE** tab, click the **+** icon and select **Blocks**. Search for `so101` and select the `so101/discovery` result. Leave its name as the default and save the config. Saving is the moment `viam-server` downloads the SO-ARM101 module; the arm and gripper models you add later in this phase come from that same module, so the download happens only once.
+On the **CONFIGURE** tab for your Viam machine, click the **+** icon and select **Blocks**. Search for `so101` and select the `so101/discovery` result. Leave its name as the default and save the config. Once you save, `viam-server` downloads the SO-ARM101 module; the arm and gripper models you add later in this phase come from that same module, so the download happens only once.
 
 <!-- ASSET configure-add-discovery (UI+): the add-block dialog with "so101" searched and the so101/discovery result highlighted -->
 
@@ -29,11 +29,15 @@ Before you open the discovery service's test panel, know what it is looking for:
 - On Linux, the port shows up as `/dev/ttyUSB0` or `/dev/ttyACM0`.
 - On macOS, look under `/dev/tty.*` for a name containing `usbmodem` or `usbserial`.
 
-Open the discovery service's **TEST** panel. It scans for a connected SO-ARM101 and, if it finds one, returns ready-made configuration snippets for the arm and the gripper, with the detected `port` already filled in.
+With the arm connected and powered, open the discovery service's **TEST** panel. It scans for a connected SO-ARM101 and, if it finds one, returns ready-made configuration snippets for the arm and the gripper, with the detected `port` already filled in.
+
+The discovery service also shows a calibration module. If you have already calibrated your arm, you can ignore it.
 
 <!-- ASSET discovery-test-panel (UI): discovery service test panel with suggested components -->
 
-With the arm connected and powered, select **Add component** next to each suggested snippet to create the arm and gripper components from it. If discovery does not find your arm, confirm the USB cable is connected and that no other program is holding the serial port open, then retry.
+Select **Add component** next to each suggested snippet to create the arm and gripper components from it. If discovery does not find your arm, confirm the USB cable is connected and that no other program is holding the serial port open, then retry.
+
+Save your machine config to enable the new components.
 
 {{< alert title="Discovery has done its job" color="note" >}}
 Like the config it suggests, the discovery service is not part of the pack sequence you build later in this workshop. Leave it in place if you expect to re-discover hardware, or remove it once the arm and gripper are configured.
@@ -41,7 +45,7 @@ Like the config it suggests, the discovery service is not part of the pack seque
 
 ## Add the arm component
 
-If you used discovery, confirm the arm component it created has one attribute, `port`, set to your arm's serial port:
+Confirm the arm component it created has one attribute, `port`, set to your arm's serial port:
 
 ```json
 {
@@ -49,15 +53,20 @@ If you used discovery, confirm the arm component it created has one attribute, `
 }
 ```
 
-If you are configuring the arm by hand instead, click the **+** icon, select **Blocks**, search for `so101`, and select the `so101/arm` result. Name it `arm`, paste the attribute above with your own port, and save.
+By default, the discovery service gives your component a name based on the port. Rename it to "arm" to match the example code in this tutorial.
 
-Open the **CONTROL** tab and find the arm's test card. Test cards call the same API your Python code calls later in this workshop; jogging a joint here is a real API call that moves the hardware. Move one joint slider a small amount and press **Execute**, then watch the physical arm turn.
+By default, the SO-101 module uses a conservative model to describe the arm's geometry in Viam's motion planning system. Because this exercise requires moving the arm to precise poses in tight quarters, we recommend using the more precise URDF geometry by adding `"use_urdf": true` to the JSON configuration.
+
+```json
+{
+  "port": "/dev/ttyUSB0",
+  "use_urdf": true
+}
+```
+
+Open the **CONTROL** tab and find the arm's test card. Test cards call the same API your Python code calls later in this workshop; jogging a joint here is a real API call that moves the hardware. Under MoveToJointPositions, move the Joint 0 slider a _small_ amount and press **Execute**, then watch the physical arm turn.
 
 <!-- ASSET control-arm-jog (VIDEO): jogging one joint slider on the arm test card and the physical arm turning in sync -->
-
-{{< alert title="The arm is about to move" color="caution" >}}
-Keep the workspace clear and change one joint a small amount at a time. Large or combined joint moves can drive the arm into the table or itself.
-{{< /alert >}}
 
 {{< checkpoint >}}
 Moving a joint slider and pressing **Execute** on the arm's test card moves the physical arm. If nothing moves, confirm the arm shows online in the CONFIGURE tab and check the LOGS tab for a serial connection error.
@@ -75,7 +84,7 @@ If you used discovery, confirm the gripper component it created carries this sam
 }
 ```
 
-If you are configuring the gripper by hand, click the **+** icon, select **Blocks**, search for `so101`, and select the `so101/gripper` result. Name it `gripper`, set `port` to the same value as the arm's, and save.
+As with the arm, change the component name generated by the discovery service to "gripper".
 
 Open the gripper's test card on the **CONTROL** tab. Press **Open** and watch the jaw open, then press **Grab** and watch it close.
 
@@ -87,11 +96,13 @@ Pressing **Open** and **Grab** on the gripper's test card opens and closes the p
 
 ## Place the arm and gripper in the frame system
 
-Adding the arm and gripper tells `viam-server` how to talk to them, but not where they sit in the cell. As Phase 1 covered, the frame system answers that question for every component in the workshop: a frame places a component relative to a parent, and every frame traces back to `world`. See [Frame system](/motion-planning/frame-system/overview/) for the general concept.
+Adding the arm and gripper tells `viam-server` how to talk to them, but not where they sit in the cell. The frame system answers that question for every component in the workshop: a frame places a component relative to a parent, and every frame traces back to `world`. See [Frame system](/motion-planning/frame-system/overview/) for the general concept.
 
-The **world frame** is the fixed reference point for the whole cell, the origin that every other position is measured from. Every frame in the system traces back to it. Placing the arm's frame with parent `world` and translation `(0, 0, 0)` puts the arm's base exactly at that origin.
+The **`world` frame** is the fixed reference point for the whole cell, the origin that every other position is measured from. Every frame in the system traces back to it. Placing the arm's frame with parent `world` and translation `(0, 0, 0)` puts the arm's base exactly at that origin.
 
 That choice matters for the next phase. Because the arm's base is the world origin, any position you read from the arm, including the poses you capture by hand in Phase 3, is already a position in the world frame, with no conversion needed. You use the arm itself as your measuring tool, and what it reports is directly usable.
+
+### Configure the arm
 
 Open the arm's card on the **CONFIGURE** tab and select **Frame**. The default frame already describes parent `world`, translation `(0, 0, 0)`, and no rotation, so you can leave the defaults and save.
 
@@ -106,7 +117,9 @@ Open the arm's card on the **CONFIGURE** tab and select **Frame**. The default f
 }
 ```
 
-The gripper is a separate component with its own collision geometry, so it needs its own frame to place that geometry in the cell. You attach it to the arm. Open the gripper's card, select **Frame**, set its parent to `arm`, and leave the translation and rotation at zero:
+### Configure the gripper
+
+The gripper is a separate component with its own collision geometry, so it needs its own frame to place that geometry in the cell by "attaching" it to the arm. Open the gripper's card, select **Frame**, set its parent to `arm`, and leave the translation and rotation at zero:
 
 ```json
 {
@@ -118,6 +131,10 @@ The gripper is a separate component with its own collision geometry, so it needs
   }
 }
 ```
+
+{{< alert color="note" >}}
+The value of "parent" is an identity, not a description. The value must match the _name_ you gave to your arm component.
+{{< /alert >}}
 
 Attaching the gripper to the arm places its shape in the cell: the 3D scene draws the gripper on the end of the arm, and the motion service accounts for the gripper's shape when it plans, so it keeps the jaws clear of obstacles.
 

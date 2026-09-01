@@ -30,7 +30,8 @@ It is a hands-on introduction to robot manipulation with Viam, for developers an
 ## Required hardware
 
 - **An SO-ARM101 arm** with its finger gripper, connected to your computer over USB.
-- **Eight cubes and a pallet mat.** You need eight cubes about 20 mm on a side, a two-by-two pallet grid to stack them on, and a staging spot to feed cubes from. The companion project includes a printable template: paper cube nets you fold into 20 mm cubes, and a mat that marks the pallet grid and the staging spot at the exact spacing the code expects. Print it, cut it out, and you are ready. Wooden or foam 20 mm cubes work too if you have them.
+- **Eight cubes** about 20mm on a side. [Casino dice](https://a.co/d/03mSASpm) are 19mm and stack well due to their square corners.
+- **A pallet mat.** The companion project includes a printable template that marks the pallet grid and the staging spot at the exact spacing the code expects. You can also use sticky notes or a large piece of paper and make your own markings.
 - **A personal computer** running `viam-server`, with the arm plugged into it over USB.
 
 ## Phases
@@ -54,7 +55,7 @@ This is a self-serve workshop, so confirm each of the following before you start
 
 - **A Viam account with an online machine.** Log in at [app.viam.com](https://app.viam.com), [create a machine](https://docs.viam.com/set-up-a-machine/first-machine/), and confirm the green **Live** indicator before you begin.
 - **Python 3.10 or newer.** Install it with [uv](https://docs.astral.sh/uv/getting-started/installation/) (recommended) or from [python.org](https://www.python.org/downloads/).
-- **An SO-ARM101 that's built, has its motors configured, and is calibrated.** Follow the first-time arm setup steps in the [SO-ARM101 module](https://app.viam.com/module/devrel/so101-arm) documentation: configure the motors, build the arm, and calibrate it.
+- **An SO-ARM101 that's built, has its motors configured, and is calibrated.** If this is your first time using the arm, follow the setup steps in the [SO-ARM101 module](https://app.viam.com/module/devrel/so101-arm) documentation: configure the motors, build the arm, and calibrate it.
 
 ### Validate your environment
 
