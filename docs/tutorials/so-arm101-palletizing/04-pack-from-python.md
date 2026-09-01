@@ -160,7 +160,7 @@ At this point, you can run the program to ensure your connection is correctly co
 uv run palletizer.py
 ```
 
-You should see the "Unkown step" message configured in `main`. If the script raises a connection error, recheck the machine address and API key in `helpers.py` against the CONNECT tab.
+You should see the "Unknown step" message configured in `main`. If the script raises a connection error, recheck the machine address and API key in `helpers.py` against the CONNECT tab.
 
 ### move_gripper
 
@@ -178,11 +178,11 @@ Every arm motion in this workshop follows the same pattern: give the motion serv
 
 The motion service drives the arm's end point to the `pose` you provide. The gripper, attached to the arm in the frame system, rides along, and the planner accounts for its shape. `world_state=None` because this phase has no obstacles to avoid yet; Phase 5 adds them.
 
-Add a small `move` method to the class to smoke-test this, using a pose returned from the `down_pose` helper:
+Add a small `test` method to the class: scratch space you rewrite each time you want to try out a piece as you build it. Start it off with a pose returned from the `down_pose` helper:
 
 ```python
-    async def move(self):
-        """Send the gripper to a safe pose, pointing straight down."""
+    async def test(self):
+        """Scratch space for testing individual pieces as you build them."""
         await self.move_gripper(down_pose(200, 0, 150))
 ```
 
@@ -190,18 +190,18 @@ Expose the method in your command line plumbing:
 
 ```python
 STEPS = {
-    "move": Palletizer.move
+    "test": Palletizer.test
 }
 ```
 
-And test it by providing "move" as an argument:
+And test it by providing "test" as an argument:
 
 ```shell
-uv run palletizer.py move
+uv run palletizer.py test
 ```
 
 {{< checkpoint >}}
-You should see the arm move. If it raises a planning error, confirm `(200, 0, 150)` is inside your arm's reach; adjust the coordinates in `move` if your cell layout differs.
+You should see the arm move. If it raises a planning error, confirm `(200, 0, 150)` is inside your arm's reach; adjust the coordinates in `test` if your cell layout differs.
 {{< /checkpoint >}}
 
 ### grip_percentage
@@ -210,23 +210,26 @@ Viam's [gripper component API](https://docs.viam.com/reference/apis/components/g
 
 Packing a pallet tightly requires more precise gripper control. The module also enables the `do_command` method, which is used to communicate commands to a component outside of standard API functions. We can use `set_position` to open or close the gripper to a specific percentage.
 
-Add a method to your class to accept a percentage:
+Add a method to your class to accept a percentage, from 0 (fully closed) to 100 (fully open):
 
 ```python
-    async def grip_percentage(self, angle: int):
+    async def grip_percentage(self, percentage: float):
         await self.gripper.do_command({
                 "command": "set_position",
-                "percentage": angle
+                "percentage": percentage
             })
 ```
 
-To test, add a line to your `move` method and run the program again:
+To test, replace the body of `test` with a call to `grip_percentage` and run the program again:
 
 ```python
-    async def move(self):
-        """Send the gripper to a safe pose, pointing straight down."""
-        await self.move_gripper(down_pose(200, 0, 150))
+    async def test(self):
+        """Scratch space for testing individual pieces as you build them."""
         await self.grip_percentage(22)
+```
+
+```shell
+uv run palletizer.py test
 ```
 
 ### pick
@@ -253,7 +256,7 @@ Add "pick" to your list of command line arguments:
 
 ```python
 STEPS = {
-    "move": Palletizer.move,
+    "test": Palletizer.test,
     "pick": Palletizer.pick
 }
 ```
@@ -308,7 +311,7 @@ With the class complete, add "pack" to the command-line plumbing:
 
 ```python
 STEPS = {
-    "move": Palletizer.move,
+    "test": Palletizer.test,
     "pick": Palletizer.pick,
     "pack": Palletizer.pack,
 }

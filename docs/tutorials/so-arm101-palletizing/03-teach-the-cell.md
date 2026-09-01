@@ -75,7 +75,7 @@ Still with torque disabled, guide the gripper to the farthest corner of the pall
 
 ## Re-enable torque
 
-To reenable torque, send the same `DoCommand` with `enable` flipped to `true`:
+To re-enable torque, send the same `DoCommand` with `enable` flipped to `true`:
 
 ```json
 {
