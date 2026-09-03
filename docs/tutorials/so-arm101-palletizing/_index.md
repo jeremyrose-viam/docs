@@ -30,7 +30,7 @@ It is a hands-on introduction to robot manipulation with Viam, for developers an
 ## Required hardware
 
 - **An SO-ARM101 arm** with its finger gripper, connected to your computer over USB.
-- **Eight cubes** about 20mm on a side. [Casino dice](https://a.co/d/03mSASpm) are 19mm and stack well due to their square corners.
+- **Eight cubes** about 20mm on a side. 19mm "casino" dice are the easiest option: inexpensive, widely available, and their square corners stack cleanly. Any other set of eight ~20mm cubes works too — fold your own from paper (the companion repo includes a PDF template), or 3D print a set if you have a printer.
 - **A pallet mat.** The companion project includes a printable template that marks the pallet grid and the staging spot at the exact spacing the code expects. You can also use sticky notes or a large piece of paper and make your own markings.
 - **A personal computer** running `viam-server`, with the arm plugged into it over USB.
 

@@ -44,7 +44,7 @@ Ensure that the values for `ARM` and `GRIPPER` in `helpers.py` match the names y
 You will import `helpers.py` to handle connection code and grid math. It gives you:
 
 - `helpers.connect()`, an `async` function that returns a connected `RobotClient`.
-- The arm's resource name (`helpers.ARM`), which you hand to the motion service, plus the gripper and motion-service names (`helpers.GRIPPER`, `helpers.MOTION`), which you pass to `from_robot`. All three name resources configured in Phase 2.
+- The arm's resource name (`helpers.ARM`), whose `.name` you hand to the motion service, plus the gripper and motion-service names (`helpers.GRIPPER`, `helpers.MOTION`), which you pass to `from_robot`. All three name resources configured in Phase 2.
 - `down_pose(x, y, z)`, which returns a `Pose` at that position with the tool pointing straight down.
 - `helpers.grid(origin, pitch, cube)`, which expands one origin corner into the eight target poses of a two-layer, four-cell pallet (explained in the next section).
 - `helpers.STAGING_POSE` and `helpers.PALLET_ORIGIN`, the two anchor poses you captured by hand in Phase 3.
@@ -112,7 +112,7 @@ PITCH = 30  # mm, center-to-center spacing between adjacent pallet cells
 CUBE = 20  # mm, cube side length, and the z offset between layers
 APPROACH = 40  # mm, hover height above a pose before descending
 GRASP_HEIGHT = 10  # mm, how far from the bottom of a cube the gripper will close
-
+GRIP_PERCENTAGE = 10 # percentage, determines the appropriate gripper width to grasp your cubes
 
 class Palletizer:
     def __init__(self, robot):
@@ -170,7 +170,7 @@ Every arm motion in this workshop follows the same pattern: give the motion serv
     async def move_gripper(self, pose: Pose):
         destination = PoseInFrame(reference_frame="world", pose=pose)
         await self.motion.move(
-            component_name=helpers.ARM,
+            component_name=helpers.ARM.name,
             destination=destination,
             world_state=None,
         )
@@ -186,7 +186,7 @@ Add a small `test` method to the class: scratch space you rewrite each time you 
         await self.move_gripper(down_pose(200, 0, 150))
 ```
 
-Expose the method in your command line plumbing:
+Add the method in `STEPS` to expose it in your command line plumbing:
 
 ```python
 STEPS = {
@@ -232,9 +232,13 @@ To test, replace the body of `test` with a call to `grip_percentage` and run the
 uv run palletizer.py test
 ```
 
+The SO-101's gripper servo can overload if commanded to grip a solid object more tightly than the space allows. Hold one of your cubes between the gripper jaws and adjust the value you provide to `grip_percentage` in small increments to determine the precise percentage needed to grip one of your cubes. You can also use `do_command` with the same JSON syntax directly from the gripper's test card in the Viam app.
+
+Once you have determined the appropriate percentage, adjust the `GRIP_PERCENTAGE` constant in your program.
+
 ### pick
 
-`pick` reads the fixed staging pose, then uses the `move_gripper` and `grip_percentage` methods to hover above it, descend onto the cube, close the gripper, and lift back clear. Add it to the `Palletizer` class:
+`pick` reads the fixed staging pose, then uses the `move_gripper` and `grip_percentage` methods to hover above it, descend onto the cube, close the gripper to the percentage you determined in the last step, and lift back clear. Add it to the `Palletizer` class:
 
 ```python
     async def pick(self):
@@ -243,16 +247,16 @@ uv run palletizer.py test
         hover = down_pose(staging.x, staging.y, staging.z + APPROACH)
         grasp = down_pose(staging.x, staging.y, staging.z + GRASP_HEIGHT)
         await self.move_gripper(hover)
-        await self.grip_percentage(34)
+        await self.grip_percentage(GRIP_PERCENTAGE * 3) # open the gripper wider than the cube
         await self.move_gripper(grasp)
-        await self.grip_percentage(12)
+        await self.grip_percentage(GRIP_PERCENTAGE) # close the gripper on the cube
         await asyncio.sleep(.5)
         await self.move_gripper(hover)
 ```
 
 The staging spot is a single fixed pose, and you hand-feed one cube to it before every call to `pick`. Note the grasp target is `staging.z + GRASP_HEIGHT`, which places the tip of your gripper a few millimeters above the surface of the table.
 
-Add "pick" to your list of command line arguments:
+Add "pick" to your list of command line arguments in `STEPS`:
 
 ```python
 STEPS = {
@@ -282,9 +286,11 @@ The gripper hovers above the staging pose, descends, closes on the cube, and lif
         hover = down_pose(target.x, target.y, target.z + APPROACH)
         await self.move_gripper(hover)
         await self.move_gripper(down_pose(target.x, target.y, target.z + GRASP_HEIGHT))
-        await self.grip_percentage(16)
+        await self.grip_percentage(GRIP_PERCENTAGE + 2) # release the cube
         await self.move_gripper(hover)
-        self.placed.append(target)
+
+        # Add the coordinates of the placed box based on the arm pose, adjusting for gripper length
+        self.placed.append(Pose(x=target.x, y=target.y, z=target.z - 105))
 ```
 
 `helpers.grid` returns all eight target poses, bottom layer followed by top layer; `seq` indexes into that list. The hover-then-descend pattern mirrors `pick`: transit above the cell first, then lower straight down, so the cube does not drag across neighboring cells on its way in.

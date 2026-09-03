@@ -20,7 +20,7 @@ In this phase you configure the arm and gripper, verify them with their test car
 
 Rather than typing the arm and gripper configs by hand, start with the SO-ARM101 module's **discovery service**. A discovery service reports the hardware attached to a machine and suggests configurations for it, so you configure the right components without hunting for serial ports or attribute names by hand. See [Discovery service](/reference/services/discovery/) to learn more about the general pattern.
 
-On the **CONFIGURE** tab for your Viam machine, click the **+** icon and select **Blocks**. Search for `so101` and select the `so101/discovery` result. Leave its name as the default and save the config. Once you save, `viam-server` downloads the SO-ARM101 module; the arm and gripper models you add later in this phase come from that same module, so the download happens only once.
+On the **CONFIGURE** tab for your Viam machine, click the **+** icon and select **Blocks**. Search for `so101` and select the `so101-arm/discovery` result. Leave its name as the default and save the config. Once you save, `viam-server` downloads the SO-ARM101 module; the arm and gripper models you add later in this phase come from that same module, so the download happens only once.
 
 <!-- ASSET configure-add-discovery (UI+): the add-block dialog with "so101" searched and the so101/discovery result highlighted -->
 

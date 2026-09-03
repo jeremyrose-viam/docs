@@ -39,6 +39,7 @@ from viam.proto.common import (
     Geometry,
     RectangularPrism,
     Vector3,
+    Transform,
 )
 ```
 
@@ -73,7 +74,7 @@ Update `move_gripper` to accept and forward a `world_state`, replacing the hardc
     async def move_gripper(self, pose: Pose, world_state=None):
         destination = PoseInFrame(reference_frame="world", pose=pose)
         await self.motion.move(
-            component_name=helpers.ARM,
+            component_name=helpers.ARM.name,
             destination=destination,
             world_state=world_state,
         )
@@ -90,19 +91,6 @@ Each placed-cube box is centered on the pose you released the cube at, which is 
 The `obstacles` method covers the cubes on the pallet, but not the cube in the gripper. Between a `pick` and the matching `place`, the carried cube is not on the pallet, it moves wherever the arm moves. Modeling it as a fixed `world` obstacle would be wrong: obstacles are resolved to world coordinates once, at the start of planning, and then stay put.
 
 The carried cube belongs in `WorldState.transforms` instead. A `Transform` adds a new frame to the planner's world for the duration of a move, and because you parent that frame to the gripper, it moves with the arm. Add `Transform` to the import block, then extend `obstacles` to take a `held` flag:
-
-```python
-from viam.proto.common import (
-    Pose,
-    PoseInFrame,
-    WorldState,
-    GeometriesInFrame,
-    Geometry,
-    RectangularPrism,
-    Vector3,
-    Transform,
-)
-```
 
 ```python
     def obstacles(self, held=False):
@@ -159,10 +147,12 @@ With `obstacles` in place, update `pick`, `place`, and `pack` to pass it, and ex
         """Pick the cube waiting on the staging spot and lift it clear."""
         staging = helpers.STAGING_POSE
         hover = down_pose(staging.x, staging.y, staging.z + APPROACH)
-        grasp = down_pose(staging.x, staging.y, staging.z - GRASP_DEPTH)
+        grasp = down_pose(staging.x, staging.y, staging.z + GRASP_HEIGHT)
         await self.move_gripper(hover, self.obstacles())
+        await self.grip_percentage(GRIP_PERCENTAGE * 3)
         await self.move_gripper(grasp, self.obstacles())
-        await self.gripper.grab()
+        await self.grip_percentage(GRIP_PERCENTAGE)
+        await asyncio.sleep(.5)
         await self.move_gripper(hover, self.obstacles(held=True))
 
     async def place(self, seq: int):
@@ -171,9 +161,10 @@ With `obstacles` in place, update `pick`, `place`, and `pack` to pass it, and ex
         hover = down_pose(target.x, target.y, target.z + APPROACH)
         await self.move_gripper(hover, self.obstacles(held=True))
         await self.move_gripper(down_pose(target.x, target.y, target.z), self.obstacles())
-        await self.gripper.open()
+        await self.grip_percentage(GRIP_PERCENTAGE + 2)
         await self.move_gripper(hover, self.obstacles())
-        self.placed.append(target)
+        # Add the coordinates of the placed box based on the arm pose, adjusting for gripper length
+        self.placed.append(Pose(x=target.x, y=target.y, z=target.z - 105))
 
     async def pack(self):
         """Pack both layers: eight cubes, cells 0 through 7."""
@@ -192,13 +183,17 @@ Run the full pack:
 uv run palletizer.py pack
 ```
 
-Hand-feed a cube to the staging spot for each of the eight prompts, the same rhythm as Phase 4. Keep the **3D scene** tab open while it runs; each time `place` appends to `self.placed`, the next move's obstacles include one more cube, and you can watch the set of avoided geometries grow cell by cell as the pallet fills.
+Hand-feed a cube to the staging spot for each of the eight prompts, the same rhythm as Phase 4.
+
+{{< alert title="Obstacles in the 3D scene" color="tip" >}}
+Obstacles are not visually represented in real time in the 3D scene. Transforms are shown, so you can watch the cube held by the gripper while it is in motion. For debugging, you can see obstacle positions for a past move using the Motion Plan Replayer.
+{{< /alert >}}
 
 <!-- ASSET 3dscene-obstacles (UI): 3D scene showing placed-cube obstacles accumulating -->
 <!-- ASSET pack-two-layer (VIDEO): the full eight-cube two-layer pack running collision-free, the arm routing over placed cubes (milestone two hero) -->
 
 {{< checkpoint >}}
-After eight cycles, `pack` prints `packed 8 cubes` and both layers of the pallet are full, four cubes on the bottom and four stacked directly above them, with no collisions along the way. If the arm clips a placed cube, first confirm every call to `move_gripper` in `pick` and `place` passes a `world_state`, none should fall back to the `None` default; then confirm `self.placed.append(target)` runs after each successful `place`, so later cycles actually see the cubes placed before them.
+After eight cycles, `pack` prints `packed 8 cubes` and both layers of the pallet are full, four cubes on the bottom and four stacked directly above them, with no collisions along the way. If the arm clips a placed cube, first confirm every call to `move_gripper` in `pick` and `place` passes a `world_state` and that no calls fall back to the `None` default; then confirm `self.placed.append(Pose(x=target.x, y=target.y, z=target.z - 105))` runs after each successful `place`, so later cycles actually see the cubes placed before them.
 {{< /checkpoint >}}
 
 ## Milestone two

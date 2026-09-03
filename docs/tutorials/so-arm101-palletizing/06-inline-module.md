@@ -93,7 +93,7 @@ def new(cls, config, dependencies):
     return self
 ```
 
-This sketch is illustrative, not a complete file: fill in the pose attributes with however you choose to encode `x`, `y`, and `z` in the config (a small object with three numeric fields works well), and carry over `PITCH`, `CUBE`, `APPROACH`, and `GRASP_DEPTH` as module-level constants exactly as they were in `palletizer.py`.
+This sketch is illustrative, not a complete file: fill in the pose attributes with however you choose to encode `x`, `y`, and `z` in the config (a small object with three numeric fields works well), and carry over `PITCH`, `CUBE`, `APPROACH`, and `GRASP_HEIGHT` as module-level constants exactly as they were in `palletizer.py`.
 
 ## Trigger the module with do_command
 
