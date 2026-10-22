@@ -20,6 +20,17 @@
         display: block !important;
     }
 
+    // Between md and lg the navbar search is hidden and the search bar lives
+    // at the top of this scrolling nav; keep it pinned while the list scrolls.
+    @include media-breakpoint-only(md) {
+        .content-mobile {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background-color: #fff;
+        }
+    }
+
 
     &__section {
         li {
