@@ -414,6 +414,64 @@ class GoParser:
                                     'usage': 'GoToInputs(ctx <a href="/context">context</a>.<a href="/context#Context">Context</a>, inputSteps ...<a href="/go.viam.com/rdk/referenceframe#Input">[]referenceframe.Input</a>) <a href="/builtin#error">error</a>', \
                                     'method_link': 'https://pkg.go.dev/go.viam.com/rdk/robot/framesystem#InputEnabled'}
 
+                            ## Similarly, if the resource being considered inherits from framesystem.RobotFrameSystem
+                            ## (robot.Robot, since RDK v0.84.0), then add its methods that map to a proto in the proto map file:
+                            ## FrameSystemConfig(), GetPose(), TransformPose(), and TransformPointCloud(). pkg.go.dev lists an
+                            ## embedded interface as a single line, so the inline method scraper above does not find these.
+                            ## They are documented on the framesystem.RobotFrameSystem interface page, so scrape them from there
+                            ## using the same extraction as the inline scraper above:
+                            if '\tframesystem.RobotFrameSystem' in resource_interface.text:
+                                framesystem_url = f"{self.scrape_url}/go.viam.com/rdk/robot/framesystem"
+                                framesystem_soup = make_soup(framesystem_url)
+                                if not framesystem_soup:
+                                    print(f"DEBUG: No soup for {framesystem_url}, skipping inherited framesystem.RobotFrameSystem methods")
+                                else:
+                                    framesystem_interfaces = framesystem_soup.find_all(
+                                        lambda tag: tag.name == 'div'
+                                        and tag.get('class') == ['Documentation-declaration']
+                                        and tag.pre.text.startswith('type RobotFrameSystem interface {'))
+                                    for framesystem_interface in framesystem_interfaces:
+                                        for tag in framesystem_interface.find_all('span', attrs={"data-kind" : "method"}):
+                                            tag_id = tag.get('id')
+                                            method_name = tag_id.split('.')[1]
+
+                                            ## Only the methods that map to a proto in the proto map file, skipping, for example, CurrentInputs():
+                                            this_method_dict = {}
+                                            with open(self.proto_map_file, 'r') as f:
+                                                for row in f:
+                                                    if not row.startswith('#') \
+                                                    and row.startswith(resource + ',') \
+                                                    and row.split(',')[4] == method_name:
+                                                        this_method_dict["proto"] = row.split(',')[1]
+                                            if "proto" not in this_method_dict:
+                                                continue
+
+                                            this_method_raw1 = regex.split(r'id="' + tag_id + '"', str(framesystem_interface))[1].removeprefix('>').removeprefix(' data-kind="method">').lstrip()
+                                            this_method_raw2 = regex.split(r'<span .*data-kind="method".*>', this_method_raw1)[0].removesuffix('}</pre>\n</div>').removesuffix('</span>').rstrip()
+
+                                            method_description = ""
+                                            if tag.find('span', class_='comment'):
+                                                for comment in regex.split(r'<span class="comment">', this_method_raw2)[1:]:
+                                                    comment_raw = regex.split(r'</span>.*', comment.removeprefix('//'))[0].lstrip()
+                                                    method_description = method_description + comment_raw
+                                            this_method_dict["description"] = method_description
+
+                                            method_usage_raw = regex.sub(r'<span class="comment">.*</span>', '', this_method_raw2)
+                                            method_usage_raw2 = regex.sub(r'</span>', '', method_usage_raw).replace("\t", "  ").lstrip().rstrip()
+                                            this_method_dict["usage"] = regex.sub(r'/rdk@v[0-9\.]*/', '/rdk/', method_usage_raw2, flags=regex.DOTALL)
+
+                                            ## Link to the parent interface, always at the upstream URL (as for framesystem.InputEnabled above):
+                                            this_method_dict["method_link"] = 'https://pkg.go.dev/go.viam.com/rdk/robot/framesystem#RobotFrameSystem'
+
+                                            go_code_samples_raw = framesystem_soup.find_all(
+                                                lambda code_sample_tag: code_sample_tag.name == 'p'
+                                                and code_sample_tag.text.startswith(method_name)
+                                                and code_sample_tag.text.endswith(method_name + ' example:\n'))
+                                            if len(go_code_samples_raw) == 1:
+                                                this_method_dict["code_sample"] = go_code_samples_raw[0].find_next('pre').text.replace("\t", "  ")
+
+                                            self.go_methods[type][resource][method_name] = this_method_dict
+
                 ## For SLAM service only, additionally fetch data for two helper methods defined outside of the resource's interface:
                 if resource == 'slam':
 

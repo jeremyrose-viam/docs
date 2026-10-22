@@ -597,6 +597,11 @@ def parse_method_usage(usage_string):
                         type_name = 'srcName'
                         param_type = 'string'
                         type_link = '/builtin#string'
+                    ## Hardcode for type inference for componentName param:
+                    elif param_raw[0] == 'componentName':
+                        type_name = 'componentName'
+                        param_type = 'string'
+                        type_link = '/builtin#string'
                     ## Handle returns:
                     else:
                         type_name = ''
