@@ -19,6 +19,7 @@ The [`auto-obstacle-generation`](https://app.viam.com/module/viam/auto-obstacle-
 - An arm with a frame. See [Arm with gripper and wrist camera](/motion-planning/frame-system/arm-gripper-camera/).
 - A depth camera that returns point clouds, mounted on the arm's wrist, with its frame parented to the arm or to a gripper on the arm. Intel RealSense and Orbbec cameras both work. See [Configure the camera frame](/motion-planning/frame-system/arm-gripper-camera/#5-add-a-frame-to-the-wrist-camera).
 - A hand-eye-calibrated camera frame. An error of a few degrees in the camera's orientation puts every box in the wrong place. The `handeye` model in the [camera-calibration module](https://github.com/viam-labs/camera-calibration) computes the camera's pose on the arm.
+- The arm in a starting pose clear of every object. The arm returns to this pose after the scan, and the scanner keeps boxes out of it.
 
 ## How the scan works {#how-the-scan-works}
 
@@ -72,14 +73,13 @@ For example, these rings suit a uFactory xArm6 with a gripper:
 The scanner skips views the motion planner can't reach.
 For every attribute and its default, see the [module README](https://github.com/viam-modules/auto-obstacle-generation#configuration).
 
-## 3. Clear the space around the arm {#clear-the-space-around-the-arm}
+## 3. Clear the arm's swing path {#clear-the-arms-swing-path}
 
-The first scan moves the arm through the whole pattern without knowing what's around it.
+The first scan moves the arm through the whole pattern knowing only the obstacles already in your config.
 Before you start:
 
-- Move anything loose out of the arm's reach.
+- Move anything out of the space the arm and camera sweep through as they circle the base. Leave the rest of the workspace as it is: that's what the scan maps.
 - Keep people out of the room. Anything that moves during the scan is mapped where it was.
-- Move the arm to a pose clear of every object. The arm returns to this pose after the scan, and the scanner keeps boxes out of it.
 
 ## 4. Start the scan {#start-the-scan}
 
