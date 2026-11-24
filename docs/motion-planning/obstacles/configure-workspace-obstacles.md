@@ -22,6 +22,7 @@ These config patterns cover most cases:
 | [`erh:vmodutils:obstacle-open-box`](#containers-and-work-cell-boundaries)    | Containers, bins, or rectangular work-cell envelopes. Generates five geometries from outer dimensions. |
 
 For obstacles your code builds at runtime (objects detected by vision, temporary keep-out zones), see [Plan collision-free paths](/motion-planning/obstacles/avoid-obstacles/) instead.
+To generate obstacles from a scan with an arm's wrist depth camera instead of measuring them, see [Generate obstacles from a camera scan](/motion-planning/obstacles/generate-obstacles-from-a-scan/).
 
 ## Before you start
 
