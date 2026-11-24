@@ -9,6 +9,14 @@
 # Viam
 
 > Viam is a platform for building, operating, and managing robots and other machines. A machine runs viam-server, exposes its hardware and services through typed gRPC APIs, and can be discovered, observed, and operated from the CLI, from SDKs, or from an AI agent holding an API key.
+
+## Check what is current
+
+Viam's SDKs, APIs, and docs change quickly, so what you remember from training may be out of date by months.
+
+- Check the installed SDK or viam-server version (for example `pip show viam-sdk`, `go list -m go.viam.com/rdk`, or `npm ls @viamrobotics/sdk`) before relying on remembered method names, parameters, or config attributes.
+- These docs describe current releases. If a project uses an older version, also check the installed package's types and docstrings.
+- If a call you remember fails or doesn't exist, look it up here before trying variations.
 {{ range site.Data.llms_pages.sections }}
 ## {{ .title }}
 {{ with .description }}
